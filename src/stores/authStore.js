@@ -1,9 +1,13 @@
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { defineStore } from 'pinia';
-import { ref, onMounted } from 'vue';
-import { auth } from '@/firebase';
+import { ref } from 'vue';
+import { auth, db, storage } from '@/firebase';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useRouter } from 'vue-router';
 import { getFirebaseErrorMessage } from '@/utils/firebaseErrors.js';
+
+const createEmailFromPhone = (phone) => `${phone}@petcheckone.app`;
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
@@ -12,31 +16,41 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref(null);
   const router = useRouter();
 
-  async function login(email, password) {
+  async function login(phone, password) {
     isLoading.value = true;
     error.value = null;
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      user.value = userCredential.user;
-      isAuthenticated.value = true;
-      router.push('/profile');
+      const email = createEmailFromPhone(phone);
+      await signInWithEmailAndPassword(auth, email, password);
+      return { success: true };
     } catch (e) {
       error.value = getFirebaseErrorMessage(e);
+      return { success: false, message: getFirebaseErrorMessage(e) };
     } finally {
       isLoading.value = false;
     }
   }
 
-  async function register(email, password) {
+  async function register({ name, phone, password }) {
     isLoading.value = true;
     error.value = null;
     try {
+      const email = createEmailFromPhone(phone);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      user.value = userCredential.user;
-      isAuthenticated.value = true;
-      router.push('/profile');
+      const newUser = userCredential.user;
+
+      await setDoc(doc(db, 'users', newUser.uid), {
+        name: name,
+        phone: phone,
+        email: email, 
+        uid: newUser.uid,
+        avatar: null, // Initialize avatar field
+        hasAgreedToTerms: false // Initialize terms agreement
+      });
+      return { success: true };
     } catch (e) {
       error.value = getFirebaseErrorMessage(e);
+      return { success: false, message: getFirebaseErrorMessage(e) };
     } finally {
       isLoading.value = false;
     }
@@ -46,9 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true;
     try {
       await signOut(auth);
-      user.value = null;
-      isAuthenticated.value = false;
-      router.push('/login');
+      // onAuthStateChanged will handle the rest
     } catch (e) {
       error.value = getFirebaseErrorMessage(e);
     } finally {
@@ -56,13 +68,78 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  onMounted(() => {
-    onAuthStateChanged(auth, (currentUser) => {
-      user.value = currentUser;
-      isAuthenticated.value = !!currentUser;
+  async function updateAvatar(avatarFile) {
+    if (!user.value) return { success: false, message: 'User not authenticated.' };
+    isLoading.value = true;
+    try {
+      // 1. Create a unique path in Storage
+      const filePath = `avatars/${user.value.uid}/${Date.now()}_${avatarFile.name}`;
+      const avatarStorageRef = storageRef(storage, filePath);
+
+      // 2. Upload the file
+      const uploadResult = await uploadBytes(avatarStorageRef, avatarFile);
+
+      // 3. Get the public URL
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+
+      // 4. Update the user's document in Firestore
+      const userDocRef = doc(db, 'users', user.value.uid);
+      await updateDoc(userDocRef, { avatar: downloadURL });
+
+      // 5. Update the local state for immediate UI feedback
+      user.value.avatar = downloadURL;
+
+      // Also update the auth profile if you want to use Firebase's photoURL
+      await updateProfile(auth.currentUser, { photoURL: downloadURL });
+
+      return { success: true, url: downloadURL };
+    } catch (e) {
+      console.error("Avatar upload failed:", e);
+      error.value = getFirebaseErrorMessage(e);
+      return { success: false, message: getFirebaseErrorMessage(e) };
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  
+  async function updateUser(userData) {
+    if (!user.value) return;
+    const userDocRef = doc(db, "users", user.value.uid);
+    await updateDoc(userDocRef, userData);
+    // Update local state
+    Object.assign(user.value, userData);
+  }
+
+  const initialize = () => {
+    onAuthStateChanged(auth, async (currentUser) => {
+      isLoading.value = true;
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          user.value = { ...currentUser, ...userDoc.data() };
+        } else {
+          // This might happen if Firestore doc creation failed after auth creation
+          user.value = currentUser;
+        }
+        isAuthenticated.value = true;
+        if (router.currentRoute.value.path === '/login' || router.currentRoute.value.path === '/') {
+            router.push('/profile');
+        }
+      } else {
+        user.value = null;
+        isAuthenticated.value = false;
+        // Only redirect if not already on a public page
+        if (router.currentRoute.value.meta.requiresAuth) {
+            router.push('/login');
+        }
+      }
       isLoading.value = false;
     });
-  });
+  };
 
-  return { user, isAuthenticated, isLoading, error, login, register, logout };
+  initialize();
+
+  return { user, isAuthenticated, isLoading, error, login, register, logout, updateAvatar, updateUser };
 });

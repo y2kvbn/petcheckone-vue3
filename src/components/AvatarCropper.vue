@@ -44,6 +44,7 @@ const imageSrc = ref(null);
 const fileInput = ref(null);
 const cropper = ref(null);
 const isUploading = ref(false);
+const originalFileName = ref('avatar.png'); // Store original file name
 const authStore = useAuthStore();
 
 const emit = defineEmits(['upload-complete', 'upload-error']);
@@ -59,6 +60,7 @@ const triggerFileInput = () => {
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   if (file) {
+    originalFileName.value = file.name; // Save the original file name
     const reader = new FileReader();
     reader.onload = (e) => {
       imageSrc.value = e.target.result;
@@ -67,34 +69,50 @@ const handleFileChange = (event) => {
   }
 };
 
-const cropAndUpload = async () => {
+const cropAndUpload = () => {
   if (!cropper.value) return;
   isUploading.value = true;
-  
-  const croppedCanvas = cropper.value.getCroppedCanvas({
-    width: 256,
+
+  cropper.value.getCroppedCanvas({ 
+    width: 256, 
     height: 256,
     imageSmoothingQuality: 'high',
-  });
+  }).toBlob(async (blob) => {
+    if (!blob) {
+        console.error('Canvas to Blob conversion failed.');
+        emit('upload-error');
+        isUploading.value = false;
+        return;
+    }
 
-  const croppedImageData = croppedCanvas.toDataURL('image/png');
+    // Create a new File object to retain the original name and type
+    const avatarFile = new File([blob], originalFileName.value, {
+        type: blob.type,
+        lastModified: Date.now(),
+    });
 
-  try {
-    await authStore.updateAvatar(croppedImageData);
-    emit('upload-complete');
-    resetAndClose();
-  } catch (error) {
-    console.error("Avatar upload failed:", error);
-    emit('upload-error');
-  } finally {
-    isUploading.value = false;
-  }
+    try {
+        const result = await authStore.updateAvatar(avatarFile);
+        if (result.success) {
+            emit('upload-complete');
+            resetAndClose();
+        } else {
+            throw new Error(result.message || 'Upload failed in store');
+        }
+    } catch (error) {
+        console.error("Avatar upload failed:", error);
+        emit('upload-error');
+    } finally {
+        isUploading.value = false;
+    }
+  }, 'image/png');
 };
 
 const resetAndClose = () => {
   dialog.value = false;
   imageSrc.value = null;
   if(fileInput.value) fileInput.value.value = null; // Reset file input
+  originalFileName.value = 'avatar.png'; // Reset to default
 };
 
 // Expose the open method to parent components

@@ -66,13 +66,10 @@ export const useBookingStore = defineStore('booking', () => {
       const dateTimeString = `${currentBooking.value.bookingDate}T${currentBooking.value.bookingTime}`;
       const timeZone = 'Asia/Taipei';
       
-      // Create a date object from the local time string
       const localDate = new Date(dateTimeString);
-
-      // Get the UTC equivalent of the date in the specified timezone
       const utcDate = new Date(localDate.toLocaleString('en-US', { timeZone }));
 
-      const newBooking = {
+      const newBookingData = {
         userId: userId,
         storeId: currentStoreId,
         petIds: currentBooking.value.selectedPetIds,
@@ -83,7 +80,14 @@ export const useBookingStore = defineStore('booking', () => {
       };
 
       const bookingsCollectionPath = getCollectionPath('bookings');
-      await addDoc(collection(db, bookingsCollectionPath), newBooking);
+      // Capture the returned DocumentReference
+      const docRef = await addDoc(collection(db, bookingsCollectionPath), newBookingData);
+
+      // Create the complete booking object with the new ID
+      const completeBooking = { id: docRef.id, ...newBookingData };
+
+      // Push the new booking directly into the local state
+      bookings.value.push(completeBooking);
       
       const memberDocRef = doc(db, 'stores', currentStoreId, 'members', userId);
       const memberDocSnap = await getDoc(memberDocRef);
@@ -101,9 +105,11 @@ export const useBookingStore = defineStore('booking', () => {
 
       await setDoc(memberDocRef, memberData, { merge: true });
 
-      await fetchBookings(userId);
+      // No longer need to fetch all bookings again
+      // await fetchBookings(userId); 
+      
       resetCurrentBooking();
-      return { success: true };
+      return { success: true, newBooking: completeBooking }; // Return the new booking
     } catch (error) {
       console.error("Error saving booking to Firestore:", error);
       return { success: false, message: '儲存預約失敗，請稍後再試。' };
@@ -138,11 +144,12 @@ export const useBookingStore = defineStore('booking', () => {
   }
 
   async function cancelBooking(bookingId) {
-    const bookingToCancel = bookings.value.find(b => b.id === bookingId);
-    if (!bookingToCancel) {
+    const bookingIndex = bookings.value.findIndex(b => b.id === bookingId);
+    if (bookingIndex === -1) {
       return { success: false, message: '找不到預約記錄' };
     }
 
+    const bookingToCancel = bookings.value[bookingIndex];
     const bookingDate = bookingToCancel.bookingDateTime.toDate();
     const today = new Date();
     if (bookingDate.toDateString() === today.toDateString()) {
@@ -153,10 +160,14 @@ export const useBookingStore = defineStore('booking', () => {
     try {
       const bookingDocRef = doc(db, getCollectionPath('bookings'), bookingId);
       await updateDoc(bookingDocRef, { status: 'cancelled' });
-      const index = bookings.value.findIndex(b => b.id === bookingId);
-      if (index !== -1) {
-        bookings.value[index].status = 'cancelled';
-      }
+      
+      // Instead of just updating status, you might want to remove it from the upcoming list
+      // This removes the booking from the local array entirely
+      // bookings.value.splice(bookingIndex, 1);
+
+      // Or, if you want to keep it but show it as cancelled:
+      bookings.value[bookingIndex].status = 'cancelled';
+
       return { success: true, message: '預約已成功取消' };
     } catch (error) {
       console.error("Error cancelling booking:", error);
