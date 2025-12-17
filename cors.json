@@ -1,0 +1,19 @@
+
+[
+  {
+    "origin": [
+      "https://petcheckon-vue3-03523618-b08cd.firebaseapp.com"
+    ],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "HEAD"
+    ],
+    "responseHeader": [
+      "Content-Type"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
