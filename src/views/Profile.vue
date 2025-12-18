@@ -199,11 +199,12 @@
       </v-card>
     </v-dialog>
 
-    <!-- Snackbar for notifications -->
+    <!-- Snackbar for other notifications -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
 
+    <!-- Cancel Booking Error Dialog -->
     <v-dialog v-model="cancelErrorDialog" max-width="400">
         <v-card>
             <v-card-title class="text-h5">無法取消</v-card-title>
@@ -214,6 +215,9 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
+
+    <!-- Success Dialog for Cancellation -->
+    <SuccessDialog v-model="successDialog" :message="successDialogMessage" />
 
   </v-container>
 </template>
@@ -226,6 +230,7 @@ import { usePetStore } from '@/stores/petStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useServiceStore } from '@/stores/serviceStore';
 import AvatarCropper from '@/components/AvatarCropper.vue';
+import SuccessDialog from '@/components/SuccessDialog.vue';
 import QrcodeVue from 'qrcode.vue';
 
 const auth = useAuthStore();
@@ -237,6 +242,9 @@ const avatarCropperRef = ref(null);
 
 const cancelErrorDialog = ref(false);
 const cancelErrorMessage = ref('');
+
+const successDialog = ref(false);
+const successDialogMessage = ref('');
 
 const editableUser = ref({ name: '', secondaryContact: { name: '', phone: '' } });
 const snackbar = ref({ show: false, text: '', color: 'success' });
@@ -338,8 +346,11 @@ const handleCancelBooking = async (bookingId) => {
     if (result.isToday) {
         cancelErrorMessage.value = result.message;
         cancelErrorDialog.value = true;
+    } else if (result.success) {
+        successDialogMessage.value = result.message;
+        successDialog.value = true;
     } else {
-        snackbar.value = { show: true, text: result.message, color: result.success ? 'success' : 'error' };
+        snackbar.value = { show: true, text: result.message, color: 'error' };
     }
 };
 

@@ -1,49 +1,53 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="handleUpdate" persistent max-width="400px">
-    <v-card>
-      <v-card-title>
-        <span class="headline">註冊成功</span>
+  <v-dialog v-model="dialog" max-width="400" persistent>
+    <v-card class="rounded-lg">
+      <v-card-title class="d-flex justify-center align-center text-h5 font-weight-bold green-bg">
+        <v-icon left color="white">mdi-check-circle</v-icon>
+        <span class="ml-2 text-white">操作成功</span>
       </v-card-title>
-      <v-card-text>
-        恭喜您，帳號已成功建立！請點擊下方按鈕前往登入頁面。
+      <v-card-text class="text-center text-h6 py-10">
+        {{ message }}
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions class="pa-4">
         <v-spacer></v-spacer>
-        <v-btn color="primary" text @click="closeDialog">
-          前往登入
+        <v-btn
+          color="green-darken-1"
+          variant="elevated"
+          size="large"
+          block
+          @click="closeDialog"
+        >
+          關閉
         </v-btn>
+        <v-spacer></v-spacer>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup>
+import { ref, watch } from 'vue';
 
-// --- Props & Emits ---
-// This component now uses a standard v-model pattern and emits a 'close' event.
 const props = defineProps({
   modelValue: Boolean,
+  message: String,
 });
 
-const emit = defineEmits(['update:modelValue', 'close']);
+const emit = defineEmits(['update:modelValue']);
 
-// --- Methods ---
+const dialog = ref(props.modelValue);
 
-// This method is called when the dialog's state changes internally (e.g., by clicking the overlay).
-const handleUpdate = (value) => {
-  emit('update:modelValue', value);
-  // If the dialog is being closed, also emit the 'close' event.
-  if (!value) {
-    emit('close');
-  }
-};
+watch(() => props.modelValue, (newValue) => {
+  dialog.value = newValue;
+});
 
-// This method is called specifically when the user clicks the action button.
 const closeDialog = () => {
-  // First, tell the parent to update the v-model value to false.
   emit('update:modelValue', false);
-  // Then, explicitly emit the 'close' event to trigger the parent's action (like redirection).
-  emit('close');
 };
-
 </script>
+
+<style scoped>
+.green-bg {
+  background-color: #4CAF50; /* A pleasant green */
+}
+</style>
