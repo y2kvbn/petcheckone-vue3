@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCgZpA5tLhLWH5j2uB0upvRm8I-Y-3aqcs",
   authDomain: "petcheckon-vue3-03523618-b08cd.web.app",
   projectId: "petcheckon-vue3-03523618-b08cd",
-  storageBucket: "petcheckon-vue3-03523618-b08cd.appspot.com",
+  storageBucket: "petcheckon-vue3-03523618-b08cd.firebasestorage.app",
   messagingSenderId: "111028503876",
   appId: "1:111028503876:web:214d876a9bee633c80c311",
   measurementId: "G-ZCLF591ZW6"
