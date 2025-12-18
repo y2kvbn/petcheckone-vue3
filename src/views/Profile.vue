@@ -361,24 +361,25 @@ const handleLogout = () => {
   router.push('/login');
 };
 
-// --- Functions for booking details (unchanged) ---
-const getPetDetails = (petId) => pets.getPetById(petId);
+// --- Functions for booking details ---
 const getServiceDetails = (petType, serviceName) => {
     const serviceList = petType === '貓' ? serviceStore.services.cats.items : serviceStore.services.dogs.items;
     return serviceList.find(s => s.name === serviceName);
 };
+
 const parseDuration = (durationStr) => {
     if (!durationStr || typeof durationStr !== 'string') return 0;
     const match = durationStr.match(/\d+/);
     return match ? parseInt(match[0], 10) : 0;
 };
+
 const getBookingDetails = (booking) => {
     let totalDuration = 0;
-    if (!booking.services) return { pets: [], totalDuration: 0 };
-    const petsWithServices = booking.petIds.map(petId => {
-        const pet = getPetDetails(petId);
+    if (!booking.petDetails || !booking.services) return { pets: [], totalDuration: 0 };
+
+    const petsWithServices = booking.petDetails.map(pet => {
         if (!pet) return null;
-        const serviceNames = booking.services[petId] || [];
+        const serviceNames = booking.services[pet.id] || [];
         const services = serviceNames.map(name => {
             const service = getServiceDetails(pet.type, name);
             if (service) totalDuration += parseDuration(service.duration);
@@ -386,6 +387,7 @@ const getBookingDetails = (booking) => {
         }).filter(Boolean);
         return { ...pet, services: services };
     }).filter(Boolean);
+
     return { pets: petsWithServices, totalDuration };
 };
 </script>

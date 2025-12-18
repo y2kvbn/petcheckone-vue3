@@ -14,7 +14,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { useAuthStore } from './authStore';
-import { useStoreStore } from './storeStore';
+import { usePetStore } from './petStore'; // Import pet store
 import { getCollectionPath } from '@/utils/firestoreHelper';
 
 const getDefaultBookingState = () => ({
@@ -31,7 +31,7 @@ export const useBookingStore = defineStore('booking', () => {
   const currentBooking = ref(getDefaultBookingState());
 
   const authStore = useAuthStore();
-  const storeStore = useStoreStore();
+  const petStore = usePetStore(); // Get pet store instance
 
   function startNewBooking() {
     currentBooking.value = getDefaultBookingState();
@@ -57,16 +57,18 @@ export const useBookingStore = defineStore('booking', () => {
       return { success: false, message: '使用者未登入或缺少手機號碼，無法預約。' };
     }
     const userId = currentUser.uid;
+    const userName = currentUser.name; // Get user's name
 
     if (!currentBooking.value.bookingDate || !currentBooking.value.bookingTime || currentBooking.value.selectedPetIds.length === 0) {
       return { success: false, message: '預約資訊不完整，請重新操作。' };
     }
 
-    const currentStoreId = storeStore.currentStoreId;
-    if (!currentStoreId) {
-      console.error("Booking failed: No store selected.");
-      return { success: false, message: '未選擇店家，無法完成預約。' };
-    }
+    // Get pet details
+    const petDetails = currentBooking.value.selectedPetIds.map(petId => {
+        const pet = petStore.getPetById(petId);
+        return pet ? { id: pet.id, name: pet.name, type: pet.type } : null;
+    }).filter(p => p !== null);
+
 
     isLoading.value = true;
     try {
@@ -82,8 +84,9 @@ export const useBookingStore = defineStore('booking', () => {
 
       const newBookingData = {
         userId: userId,
-        storeId: currentStoreId,
+        userName: userName, // Add user's name
         petIds: currentBooking.value.selectedPetIds,
+        petDetails: petDetails, // Add pet details
         services: currentBooking.value.selectedServices,
         bookingDateTime: Timestamp.fromDate(localDate),
         status: 'confirmed',
@@ -118,7 +121,7 @@ export const useBookingStore = defineStore('booking', () => {
   }
 
   async function fetchBookings(userId) {
-    if (!userId || !storeStore.currentStoreId) return;
+    if (!userId) return;
     isLoading.value = true;
     try {
       const bookingsCollectionPath = getCollectionPath('bookings');
@@ -161,8 +164,8 @@ export const useBookingStore = defineStore('booking', () => {
     }
   }
 
-  watch([() => authStore.user?.uid, () => storeStore.currentStoreId], ([userId, storeId]) => {
-    if (userId && storeId) {
+  watch(() => authStore.user?.uid, (userId) => {
+    if (userId) {
       fetchBookings(userId);
     } else {
       bookings.value = [];
