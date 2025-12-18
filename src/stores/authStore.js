@@ -15,6 +15,9 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(true);
   const error = ref(null);
   const router = useRouter();
+  
+  const registrationSuccessMessage = ref(null);
+  const shouldSwitchToLogin = ref(false);
 
   async function login(phone, password) {
     isLoading.value = true;
@@ -47,7 +50,10 @@ export const useAuthStore = defineStore('auth', () => {
         avatar: null, // Initialize avatar field
         hasAgreedToTerms: false // Initialize terms agreement
       });
-      return { success: true };
+      
+      registrationSuccessMessage.value = '帳號建立成功！請使用您的手機號碼登入。';
+      shouldSwitchToLogin.value = true;
+
     } catch (e) {
       error.value = getFirebaseErrorMessage(e);
       return { success: false, message: getFirebaseErrorMessage(e) };
@@ -141,5 +147,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   initialize();
 
-  return { user, isAuthenticated, isLoading, error, login, register, logout, updateAvatar, updateUser };
+  return { user, isAuthenticated, isLoading, error, login, register, logout, updateAvatar, updateUser, registrationSuccessMessage, shouldSwitchToLogin };
 });

@@ -67,9 +67,9 @@ const isPetSelected = (petId) => {
 const togglePet = (petId) => {
   const index = localSelectedPetIds.value.indexOf(petId);
   if (index > -1) {
-    localSelectedPetIds.value = localSelectedPetIds.value.filter(id => id !== petId);
+    localSelectedPetIds.value.splice(index, 1);
   } else {
-    localSelectedPetIds.value = [...localSelectedPetIds.value, petId];
+    localSelectedPetIds.value.push(petId);
   }
 };
 

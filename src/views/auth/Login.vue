@@ -16,8 +16,10 @@
       <v-text-field
         v-model="password"
         label="密碼"
-        type="password"
+        :type="isPasswordVisible ? 'text' : 'password'"
         prepend-inner-icon="mdi-lock-outline"
+        :append-inner-icon="isPasswordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+        @click:append-inner="isPasswordVisible = !isPasswordVisible"
         variant="outlined"
         rounded="lg"
         :rules="passwordRules"
@@ -45,16 +47,17 @@
     </v-row>
 
     <v-btn
-      @click="handleGoogleLogin"
-      variant="outlined"
+      @click="handleLineLogin"
+      color="#00B900"
+      dark
       block
       rounded="xl"
       size="large"
       :loading="authStore.isLoading"
       :disabled="authStore.isLoading"
     >
-      <v-icon start icon="mdi-google"></v-icon>
-      透過 Google 登入
+      <v-icon start icon="mdi-chat"></v-icon>
+      Line快速登入
     </v-btn>
 
   </v-container>
@@ -70,6 +73,7 @@ const password = ref('');
 const error = ref(null);
 const router = useRouter();
 const authStore = useAuthStore();
+const isPasswordVisible = ref(false);
 
 // --- Form Validation ---
 const phoneRules = [
@@ -104,6 +108,11 @@ const handleLogin = async () => {
   }
 };
 
+const handleLineLogin = () => {
+  alert('Line 登入功能正在開發中！');
+};
+
+/*
 const handleGoogleLogin = async () => {
   error.value = null;
   const result = await authStore.loginWithGoogle();
@@ -113,5 +122,12 @@ const handleGoogleLogin = async () => {
     error.value = result.message;
   }
 };
+*/
 
 </script>
+
+<style scoped>
+.white--text {
+  color: white !important;
+}
+</style>

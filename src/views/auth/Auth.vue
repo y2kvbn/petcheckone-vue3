@@ -14,7 +14,7 @@
                 <Login />
               </v-window-item>
               <v-window-item value="register">
-                <Register @switch-to-login="tab = 'login'" />
+                <Register />
               </v-window-item>
             </v-window>
           </v-card-text>
@@ -25,11 +25,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import Login from '@/views/auth/Login.vue';
 import Register from '@/views/auth/Register.vue';
+import { useAuthStore } from '@/stores/authStore';
 
 const tab = ref('login');
+const authStore = useAuthStore();
+
+watch(() => authStore.shouldSwitchToLogin, (newValue) => {
+  if (newValue) {
+    alert(authStore.registrationSuccessMessage);
+    tab.value = 'login';
+    // Reset the flag in the store
+    authStore.shouldSwitchToLogin = false;
+    authStore.registrationSuccessMessage = null;
+  }
+}, { immediate: true });
+
 </script>
 
 <style scoped>
