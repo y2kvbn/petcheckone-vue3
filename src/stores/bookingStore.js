@@ -97,22 +97,6 @@ export const useBookingStore = defineStore('booking', () => {
       const completeBooking = { id: docRef.id, ...newBookingData };
       bookings.value.push(completeBooking);
       
-      const memberDocRef = doc(db, 'stores', currentStoreId, 'members', userId);
-      const memberDocSnap = await getDoc(memberDocRef);
-      
-      const memberData = {
-          userId: userId,
-          email: currentUser.email || 'N/A',
-          displayName: currentUser.displayName || 'N/A',
-          lastBookingAt: Timestamp.now(),
-      };
-
-      if (!memberDocSnap.exists()) {
-          memberData.joinedAt = Timestamp.now();
-      }
-
-      await setDoc(memberDocRef, memberData, { merge: true });
-
       resetCurrentBooking();
       return { success: true, newBooking: completeBooking };
     } catch (error) {
