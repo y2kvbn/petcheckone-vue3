@@ -15,9 +15,6 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(true);
   const error = ref(null);
   const router = useRouter();
-  
-  const registrationSuccessMessage = ref(null);
-  const shouldSwitchToLogin = ref(false);
 
   async function login(phone, password) {
     isLoading.value = true;
@@ -51,8 +48,8 @@ export const useAuthStore = defineStore('auth', () => {
         hasAgreedToTerms: false // Initialize terms agreement
       });
       
-      registrationSuccessMessage.value = '帳號建立成功！請使用您的手機號碼登入。';
-      shouldSwitchToLogin.value = true;
+      await signOut(auth); // Immediately sign out the user after registration
+      return { success: true };
 
     } catch (e) {
       error.value = getFirebaseErrorMessage(e);
@@ -147,5 +144,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   initialize();
 
-  return { user, isAuthenticated, isLoading, error, login, register, logout, updateAvatar, updateUser, registrationSuccessMessage, shouldSwitchToLogin };
+  return { user, isAuthenticated, isLoading, error, login, register, logout, updateAvatar, updateUser };
 });

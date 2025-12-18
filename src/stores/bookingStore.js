@@ -50,7 +50,14 @@ export const useBookingStore = defineStore('booking', () => {
     currentBooking.value.bookingTime = time;
   }
 
-  async function confirmBooking(userId) {
+  async function confirmBooking() {
+    const currentUser = authStore.user;
+    if (!currentUser || !currentUser.uid || !currentUser.phone) {
+      console.error("Booking failed: User not authenticated or phone number is missing.");
+      return { success: false, message: '使用者未登入或缺少手機號碼，無法預約。' };
+    }
+    const userId = currentUser.uid;
+
     if (!currentBooking.value.bookingDate || !currentBooking.value.bookingTime || currentBooking.value.selectedPetIds.length === 0) {
       return { success: false, message: '預約資訊不完整，請重新操作。' };
     }
@@ -64,29 +71,30 @@ export const useBookingStore = defineStore('booking', () => {
     isLoading.value = true;
     try {
       const dateTimeString = `${currentBooking.value.bookingDate}T${currentBooking.value.bookingTime}`;
-      const timeZone = 'Asia/Taipei';
-      
       const localDate = new Date(dateTimeString);
-      const utcDate = new Date(localDate.toLocaleString('en-US', { timeZone }));
+      
+      // Generate Order ID
+      const year = localDate.getFullYear();
+      const month = (localDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = localDate.getDate().toString().padStart(2, '0');
+      const phoneLastFour = currentUser.phone.slice(-4);
+      const orderId = `ORD-${year}${month}${day}-${phoneLastFour}-S01`;
 
       const newBookingData = {
         userId: userId,
         storeId: currentStoreId,
         petIds: currentBooking.value.selectedPetIds,
         services: currentBooking.value.selectedServices,
-        bookingDateTime: Timestamp.fromDate(utcDate),
+        bookingDateTime: Timestamp.fromDate(localDate),
         status: 'confirmed',
         createdAt: Timestamp.now(),
+        orderId: orderId, // Add the generated order ID
       };
 
       const bookingsCollectionPath = getCollectionPath('bookings');
-      // Capture the returned DocumentReference
       const docRef = await addDoc(collection(db, bookingsCollectionPath), newBookingData);
 
-      // Create the complete booking object with the new ID
       const completeBooking = { id: docRef.id, ...newBookingData };
-
-      // Push the new booking directly into the local state
       bookings.value.push(completeBooking);
       
       const memberDocRef = doc(db, 'stores', currentStoreId, 'members', userId);
@@ -94,8 +102,8 @@ export const useBookingStore = defineStore('booking', () => {
       
       const memberData = {
           userId: userId,
-          email: authStore.user?.email || 'N/A',
-          displayName: authStore.user?.displayName || 'N/A',
+          email: currentUser.email || 'N/A',
+          displayName: currentUser.displayName || 'N/A',
           lastBookingAt: Timestamp.now(),
       };
 
@@ -105,11 +113,8 @@ export const useBookingStore = defineStore('booking', () => {
 
       await setDoc(memberDocRef, memberData, { merge: true });
 
-      // No longer need to fetch all bookings again
-      // await fetchBookings(userId); 
-      
       resetCurrentBooking();
-      return { success: true, newBooking: completeBooking }; // Return the new booking
+      return { success: true, newBooking: completeBooking };
     } catch (error) {
       console.error("Error saving booking to Firestore:", error);
       return { success: false, message: '儲存預約失敗，請稍後再試。' };
@@ -161,11 +166,6 @@ export const useBookingStore = defineStore('booking', () => {
       const bookingDocRef = doc(db, getCollectionPath('bookings'), bookingId);
       await updateDoc(bookingDocRef, { status: 'cancelled' });
       
-      // Instead of just updating status, you might want to remove it from the upcoming list
-      // This removes the booking from the local array entirely
-      // bookings.value.splice(bookingIndex, 1);
-
-      // Or, if you want to keep it but show it as cancelled:
       bookings.value[bookingIndex].status = 'cancelled';
 
       return { success: true, message: '預約已成功取消' };

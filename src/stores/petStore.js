@@ -51,10 +51,16 @@ export const usePetStore = defineStore('pet', () => {
   }, { immediate: true });
 
   async function addPet(petData) {
-    if (!authStore.user?.uid) throw new Error("User not authenticated.");
+    if (!authStore.user?.uid || !authStore.user?.name) {
+      throw new Error("User not authenticated or user name is missing.");
+    }
     
+    // Destructure to remove the unwanted 'id' field from the form data
+    const { id, ...restOfPetData } = petData;
+
     const newPet = {
-      ...petData,
+      ...restOfPetData,
+      ownerName: authStore.user.name, // Add owner's name
       userId: authStore.user.uid,
       createdAt: new Date(),
     };
@@ -62,6 +68,7 @@ export const usePetStore = defineStore('pet', () => {
     try {
       const petsCollectionPath = getCollectionPath('pets');
       const docRef = await addDoc(collection(db, petsCollectionPath), newPet);
+      // Add the new pet to the local state, using the Firestore-generated ID
       pets.value.push({ id: docRef.id, ...newPet });
     } catch (e) {
       console.error("Error adding pet: ", e);

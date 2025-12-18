@@ -21,6 +21,7 @@
           mandatory
           active-class="time-chip--active"
           column
+          color="primary"
         >
           <v-chip
             v-for="time in availableTimes"

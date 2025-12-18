@@ -141,24 +141,35 @@
     </section>
 
     <!-- QR Code Dialog -->
-    <v-dialog v-model="qrDialog" max-width="400px">
-      <v-card class="pa-4 rounded-lg">
-        <v-card-title class="text-h5 font-weight-bold text-center">預約 QR Code</v-card-title>
-        <v-card-text class="text-center">
-          <p class="mb-2">請在店內出示此 QR Code 以供掃描</p>
-          <v-img src="/QRcode.png" alt="Booking QR Code" max-width="300" class="mx-auto my-4" />
-          <div v-if="selectedBookingForQR">
-              <p><strong>日期:</strong> {{ formatBookingDate(selectedBookingForQR.bookingDateTime) }}</p>
-              <p><strong>時間:</strong> {{ formatBookingTime(selectedBookingForQR.bookingDateTime) }}</p>
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" variant="text" @click="qrDialog = false">關閉</v-btn>
-          <v-spacer />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+<v-dialog v-model="qrDialog" max-width="400px">
+  <v-card class="pa-4 rounded-lg">
+    <v-card-title class="text-h5 font-weight-bold text-center">預約 QR Code</v-card-title>
+    <v-card-text class="text-center">
+      <p class="mb-1 font-weight-bold">寵客玩寵物美容</p>
+      <p class="mb-4 text-caption">聯絡店家: 0978031653</p>
+      
+      <div v-if="computedOrderId" class="d-flex justify-center my-4">
+        <qrcode-vue :value="computedOrderId" :size="280" level="H" :margin="2">
+          <template #logo>
+            <img src="/logo.svg" style="width: 60px; height: 60px; border-radius: 8px;">
+          </template>
+        </qrcode-vue>
+      </div>
+
+      <div v-if="selectedBookingForQR">
+          <p class="mt-4 text-body-1"><strong>訂單編號:</strong> {{ computedOrderId }}</p>
+          <p class="text-body-2"><strong>日期:</strong> {{ formatBookingDate(selectedBookingForQR.bookingDateTime) }}</p>
+          <p class="text-body-2"><strong>時間:</strong> {{ formatBookingTime(selectedBookingForQR.bookingDateTime) }}</p>
+      </div>
+    </v-card-text>
+    <v-card-actions>
+      <v-spacer />
+      <v-btn color="primary" variant="text" @click="qrDialog = false">關閉</v-btn>
+      <v-spacer />
+    </v-card-actions>
+  </v-card>
+</v-dialog>
+
 
     <!-- Avatar Cropper Component -->
     <AvatarCropper ref="avatarCropperRef" @upload-complete="handleUploadComplete" @upload-error="handleUploadError" />
@@ -215,6 +226,7 @@ import { usePetStore } from '@/stores/petStore';
 import { useBookingStore } from '@/stores/bookingStore';
 import { useServiceStore } from '@/stores/serviceStore';
 import AvatarCropper from '@/components/AvatarCropper.vue';
+import QrcodeVue from 'qrcode.vue';
 
 const auth = useAuthStore();
 const pets = usePetStore();
@@ -239,6 +251,19 @@ onMounted(() => {
     bookingStore.fetchBookings(auth.user.uid);
   }
   serviceStore.fetchServices();
+});
+
+const computedOrderId = computed(() => {
+  if (!selectedBookingForQR.value || !auth.user || !auth.user.phone) {
+    return '';
+  }
+  const bookingDate = selectedBookingForQR.value.bookingDateTime.toDate();
+  const year = bookingDate.getFullYear();
+  const month = (bookingDate.getMonth() + 1).toString().padStart(2, '0');
+  const day = bookingDate.getDate().toString().padStart(2, '0');
+  const phoneLastFour = auth.user.phone.slice(-4);
+  
+  return `ORD-${year}${month}${day}-${phoneLastFour}-S01`;
 });
 
 const isDirty = computed(() => {
