@@ -40,10 +40,10 @@
        <v-text-field
         v-model="confirmPassword"
         label="確認密碼"
-        :type="isPasswordVisible ? 'text' : 'password'"
+        :type="isConfirmPasswordVisible ? 'text' : 'password'"
         prepend-inner-icon="mdi-lock-check-outline"
-        :append-inner-icon="isPasswordVisible ? 'mdi-eye-off' : 'mdi-eye'"
-        @click:append-inner="isPasswordVisible = !isPasswordVisible"
+        :append-inner-icon="isConfirmPasswordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+        @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
         variant="outlined"
         rounded="lg"
         :rules="confirmPasswordRules"
@@ -86,6 +86,7 @@ const password = ref('');
 const confirmPassword = ref('');
 const error = ref(null);
 const isPasswordVisible = ref(false);
+const isConfirmPasswordVisible = ref(false);
 
 const authStore = useAuthStore();
 
