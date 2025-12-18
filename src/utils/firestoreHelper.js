@@ -1,4 +1,3 @@
-import { useStoreStore } from '@/stores/storeStore';
 
 /**
  * Gets the dynamic collection path based on the current store.
