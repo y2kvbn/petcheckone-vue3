@@ -33,8 +33,8 @@
         rounded="xl"
         size="large"
         class="mt-6"
-        :loading="authStore.isLoading"
-        :disabled="!isFormValid || authStore.isLoading"
+        :loading="isLoggingIn"
+        :disabled="!isFormValid || isLoggingIn"
       >
         登入
       </v-btn>
@@ -53,8 +53,7 @@
       block
       rounded="xl"
       size="large"
-      :loading="authStore.isLoading"
-      :disabled="authStore.isLoading"
+      :disabled="isLoggingIn" 
     >
       <v-icon start icon="mdi-chat"></v-icon>
       Line快速登入
@@ -74,6 +73,7 @@ const error = ref(null);
 const router = useRouter();
 const authStore = useAuthStore();
 const isPasswordVisible = ref(false);
+const isLoggingIn = ref(false); // Local loading state for this component
 
 // --- Form Validation ---
 const phoneRules = [
@@ -92,37 +92,29 @@ const isFormValid = computed(() => {
 
 // --- Logic ---
 const handleLogin = async () => {
-  error.value = null; // Reset error before login attempt
+  error.value = null;
 
   if (!isFormValid.value) {
     error.value = '請輸入有效的手機號碼和密碼。';
     return;
   }
 
-  const result = await authStore.login(phone.value, password.value);
-
-  if (result.success) {
-    router.push('/profile'); // Redirect to profile on successful login
-  } else {
-    error.value = result.message; // Show error message from the store
+  isLoggingIn.value = true;
+  try {
+    const result = await authStore.login(phone.value, password.value);
+    if (result.success) {
+      router.push('/profile');
+    } else {
+      error.value = result.message;
+    }
+  } finally {
+    isLoggingIn.value = false;
   }
 };
 
 const handleLineLogin = () => {
   alert('Line 登入功能正在開發中！');
 };
-
-/*
-const handleGoogleLogin = async () => {
-  error.value = null;
-  const result = await authStore.loginWithGoogle();
-  if (result.success) {
-    router.push('/profile');
-  } else {
-    error.value = result.message;
-  }
-};
-*/
 
 </script>
 
