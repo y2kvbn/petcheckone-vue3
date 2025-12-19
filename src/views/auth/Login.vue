@@ -33,7 +33,6 @@
         rounded="xl"
         size="large"
         class="mt-6"
-        :loading="isLoggingIn"
         :disabled="!isFormValid || isLoggingIn"
       >
         登入
@@ -53,11 +52,14 @@
       block
       rounded="xl"
       size="large"
-      :disabled="isLoggingIn" 
+      :disabled="isLoggingIn"
     >
       <v-icon start icon="mdi-chat"></v-icon>
       Line快速登入
     </v-btn>
+
+    <!-- Custom Loading Overlay -->
+    <loading-overlay :model-value="isLoggingIn" message="登入中..." />
 
   </v-container>
 </template>
@@ -66,6 +68,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import LoadingOverlay from '@/components/LoadingOverlay.vue';
 
 const phone = ref('');
 const password = ref('');
@@ -73,7 +76,7 @@ const error = ref(null);
 const router = useRouter();
 const authStore = useAuthStore();
 const isPasswordVisible = ref(false);
-const isLoggingIn = ref(false); // Local loading state for this component
+const isLoggingIn = ref(false);
 
 // --- Form Validation ---
 const phoneRules = [

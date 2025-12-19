@@ -1,33 +1,72 @@
 
 <template>
   <v-dialog v-model="dialog" max-width="500px" persistent>
-    <v-card class="pa-4 rounded-lg">
-      <v-card-title class="text-h5 font-weight-bold">更新頭像</v-card-title>
-      <v-card-text>
-        <div v-if="!imageSrc" class="text-center">
-          <v-btn color="primary" @click="triggerFileInput" variant="flat" rounded="lg">選擇圖片</v-btn>
-          <input type="file" ref="fileInput" @change="handleFileChange" accept="image/*" style="display: none;">
+    <v-card class="pa-2 pa-sm-4 rounded-xl">
+      <v-card-title class="text-h5 font-weight-bold text-center pt-4 pb-2">更新頭像</v-card-title>
+      
+      <v-card-text class="pa-4">
+        <div v-if="imageSrc">
+            <!-- Circular Cropper -->
+            <div class="cropper-circular-wrapper mb-4">
+              <vue-cropper
+                ref="cropper"
+                :src="imageSrc"
+                :aspect-ratio="1"
+                view-mode="1"
+                drag-mode="move"
+                :auto-crop-area="0.9"
+                :crop-box-resizable="false"
+                :crop-box-movable="false"
+                :toggle-drag-mode-on-dblclick="false"
+                style="height: 300px;"
+              ></vue-cropper>
+            </div>
+            <p class="text-caption text-grey-darken-1 text-center">請拖曳及縮放圖片以調整頭像</p>
         </div>
-        <div v-else>
-          <vue-cropper
-            ref="cropper"
-            :src="imageSrc"
-            :aspect-ratio="1"
-            :view-mode="1"
-            drag-mode="move"
-            :auto-crop-area="0.8"
-            :crop-box-resizable="false"
-            :toggle-drag-mode-on-dblclick="false"
-            preview=".img-preview"
-            style="max-height: 400px;"
-          ></vue-cropper>
-          <p class="text-caption text-center mt-4">請拖曳及縮放圖片以調整頭像</p>
+
+        <!-- Placeholder for file input -->
+        <div 
+          v-else 
+          @click="triggerFileInput"
+          class="file-input-placeholder d-flex flex-column align-center justify-center text-center"
+          style="height: 340px;"
+        >
+          <v-icon size="64" color="grey-lighten-1">mdi-image-plus-outline</v-icon>
+          <div class="text-h6 font-weight-medium text-grey-darken-2 mt-3">點擊此處選擇圖片</div>
+          <div class="text-body-2 text-grey-darken-1">建議使用 1:1 的圖片</div>
         </div>
+        
+        <input type="file" ref="fileInput" @change="handleFileChange" accept="image/*" style="display: none;">
       </v-card-text>
-      <v-card-actions>
-        <v-btn variant="text" @click="resetAndClose">取消</v-btn>
+
+      <v-card-actions class="pa-4">
+        <v-btn 
+          v-if="imageSrc"
+          variant="outlined"
+          color="primary"
+          @click="triggerFileInput"
+          rounded="lg"
+          class="px-4"
+        >
+          重新選擇
+        </v-btn>
         <v-spacer></v-spacer>
-        <v-btn color="primary" variant="flat" @click="cropAndUpload" :loading="isUploading">儲存頭像</v-btn>
+        <v-btn 
+          variant="text" 
+          @click="resetAndClose"
+          rounded="lg"
+          class="px-4"
+        >取消</v-btn>
+        <v-btn 
+          color="primary" 
+          variant="flat" 
+          @click="cropAndUpload" 
+          :loading="isUploading" 
+          :disabled="!imageSrc"
+          rounded="lg"
+          size="large"
+          class="px-6"
+        >儲存頭像</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -44,7 +83,7 @@ const imageSrc = ref(null);
 const fileInput = ref(null);
 const cropper = ref(null);
 const isUploading = ref(false);
-const originalFileName = ref('avatar.png'); // Store original file name
+const originalFileName = ref('avatar.png');
 const authStore = useAuthStore();
 
 const emit = defineEmits(['upload-complete', 'upload-error']);
@@ -60,7 +99,7 @@ const triggerFileInput = () => {
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   if (file) {
-    originalFileName.value = file.name; // Save the original file name
+    originalFileName.value = file.name;
     const reader = new FileReader();
     reader.onload = (e) => {
       imageSrc.value = e.target.result;
@@ -85,7 +124,6 @@ const cropAndUpload = () => {
         return;
     }
 
-    // Create a new File object to retain the original name and type
     const avatarFile = new File([blob], originalFileName.value, {
         type: blob.type,
         lastModified: Date.now(),
@@ -110,9 +148,11 @@ const cropAndUpload = () => {
 
 const resetAndClose = () => {
   dialog.value = false;
-  imageSrc.value = null;
-  if(fileInput.value) fileInput.value.value = null; // Reset file input
-  originalFileName.value = 'avatar.png'; // Reset to default
+  setTimeout(() => {
+    imageSrc.value = null;
+    if(fileInput.value) fileInput.value.value = null;
+    originalFileName.value = 'avatar.png';
+  }, 300);
 };
 
 // Expose the open method to parent components
@@ -121,11 +161,42 @@ defineExpose({ open });
 </script>
 
 <style>
-/* Ensure the cropper is displayed correctly */
-.cropper-container {
-  width: 100%;
+/* --- Circular Cropper Styles --- */
+.cropper-circular-wrapper .cropper-view-box,
+.cropper-circular-wrapper .cropper-face {
+  border-radius: 50%;
+  outline: none;
+  box-shadow: none;
 }
-.cropper-bg {
+
+.cropper-circular-wrapper .cropper-face {
+  background-color: transparent; /* Makes the cropper face transparent */
+}
+
+/* Hide the rectangular guides */
+.cropper-circular-wrapper .cropper-dashed,
+.cropper-circular-wrapper .cropper-line,
+.cropper-circular-wrapper .cropper-point {
+  display: none;
+}
+
+/* --- Placeholder Styles --- */
+.file-input-placeholder {
+  border: 2px dashed #BDBDBD;
+  border-radius: 12px;
+  padding: 32px;
+  cursor: pointer;
+  background-color: #FAFAFA;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.file-input-placeholder:hover {
+  background-color: #F0F0F0;
+  border-color: #9E9E9E;
+}
+
+/* --- General Cropper Tweaks --- */
+.cropper-container .cropper-bg {
     background-size: 10px 10px; 
 }
 </style>

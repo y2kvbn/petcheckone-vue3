@@ -2,39 +2,36 @@
 <template>
   <v-container class="pa-0 pa-md-4">
 
-    <!-- Profile Header -->
-    <div class="profile-header-wrapper mx-auto" style="max-width: 600px;">
-      <div class="avatar-container" @click="openAvatarCropper">
-        <v-avatar
-          class="profile-header-avatar"
-          color="grey-lighten-4"
-          size="120"
-        >
-          <v-img v-if="auth.user && auth.user.avatar" :src="auth.user.avatar" alt="User Avatar" />
-          <v-icon v-else size="80" color="grey-darken-1">mdi-account-circle</v-icon>
-        </v-avatar>
-        <div class="avatar-overlay">
-          <v-icon color="white">mdi-camera-plus-outline</v-icon>
-        </div>
-      </div>
+    <!-- New, compact User Profile Card -->
+    <v-card
+      class="mx-auto mt-6 mb-8 pa-2"
+      max-width="600"
+      variant="flat"
+      border
+      v-if="auth.user"
+    >
+      <v-list-item class="py-2 px-3">
+        <template v-slot:prepend>
+          <div class="avatar-container-compact mr-4" @click="openAvatarCropper">
+            <v-avatar size="64" color="grey-lighten-4">
+              <v-img v-if="auth.user && auth.user.avatar" :src="auth.user.avatar" alt="User Avatar" />
+              <v-icon v-else size="40" color="grey-darken-1">mdi-account-circle-outline</v-icon>
+            </v-avatar>
+            <div class="avatar-overlay-compact">
+              <v-icon color="white" size="small">mdi-camera-plus-outline</v-icon>
+            </div>
+          </div>
+        </template>
 
-      <v-card
-        class="profile-card text-white"
-        flat
-        v-if="auth.user"
-        style="background: linear-gradient(135deg, #FFA726 0%, #FB8C00 100%);"
-      >
-        <v-card-actions class="profile-card-actions">
-            <v-btn icon="mdi-pencil" variant="flat" color="rgba(0, 0, 0, 0.2)" @click="openEditDialog" />
-            <v-btn icon="mdi-logout" variant="flat" color="rgba(0, 0, 0, 0.2)" @click="handleLogout" />
-        </v-card-actions>
-        
-        <v-card-item class="text-center" style="padding-top: 72px; padding-bottom: 24px;">
-            <v-card-title class="profile-card-title">{{ auth.user.name }}</v-card-title>
-            <v-card-subtitle class="profile-card-subtitle mt-1">{{ auth.user.phone }}</v-card-subtitle>
-        </v-card-item>
-      </v-card>
-    </div>
+        <v-list-item-title class="text-h6 font-weight-bold">{{ auth.user.name }}</v-list-item-title>
+        <v-list-item-subtitle>{{ auth.user.phone }}</v-list-item-subtitle>
+
+        <template v-slot:append>
+          <v-btn icon="mdi-pencil-outline" variant="text" @click="openEditDialog" class="mr-1" color="grey-darken-1"></v-btn>
+          <v-btn icon="mdi-logout" variant="text" @click="handleLogout" color="grey-darken-1"></v-btn>
+        </template>
+      </v-list-item>
+    </v-card>
 
     <!-- Secondary Contact Display -->
     <v-card
@@ -393,19 +390,15 @@ const getBookingDetails = (booking) => {
 </script>
 
 <style scoped>
-/* New Avatar Styles */
-.avatar-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
+/* New Compact Avatar Styles */
+.avatar-container-compact {
+  position: relative;
   cursor: pointer;
   border-radius: 50%;
   overflow: hidden; /* Ensures the overlay stays within the circle */
 }
 
-.avatar-overlay {
+.avatar-overlay-compact {
   position: absolute;
   top: 0;
   left: 0;
@@ -420,41 +413,8 @@ const getBookingDetails = (booking) => {
   transition: opacity 0.3s ease;
 }
 
-.avatar-container:hover .avatar-overlay {
+.avatar-container-compact:hover .avatar-overlay-compact {
   opacity: 1;
-}
-
-/* Profile Header Styles */
-.profile-header-wrapper {
-  position: relative;
-  padding-top: 60px; /* Space for the avatar */
-  margin-top: 24px;
-}
-
-.profile-header-avatar {
-  border: 4px solid white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.profile-card {
-  border-radius: 24px !important;
-  position: relative;
-}
-
-.profile-card-actions {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 20;
-}
-
-.profile-card-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-}
-
-.profile-card-subtitle {
-    font-size: 1rem;
 }
 
 /* Pet Card Styles */
