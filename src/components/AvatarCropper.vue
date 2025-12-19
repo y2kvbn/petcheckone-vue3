@@ -12,7 +12,7 @@
                 ref="cropper"
                 :src="imageSrc"
                 :aspect-ratio="1"
-                view-mode="1"
+                :view-mode="1"
                 drag-mode="move"
                 :auto-crop-area="0.9"
                 :crop-box-resizable="false"
